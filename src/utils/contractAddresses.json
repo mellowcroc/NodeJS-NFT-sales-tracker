@@ -1,0 +1,11 @@
+{
+  "homestead": {
+    "otherside": "0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258"
+  },
+  "matic": {
+    "dava": "0xf81cb9bfea10d94801f3e445d3d818e72e8d1da4",
+    "osProxy": "0xfede379e48C873C75F3cc0C81F7C784aD730a8F7",
+    "os": "0xf715beb51ec8f63317d66f491e37e7bb048fcc2d",
+    "weth": "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
+  }
+}
