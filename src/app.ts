@@ -5,6 +5,8 @@ import davaAbi from "./utils/davaAbi.json";
 import osAbi from "./utils/osAbi.json";
 import genMaskAbi from "./utils/genMaskAbi.json";
 import InputDataDecoder from "ethereum-input-data-decoder";
+import TwitterApi from "twitter-api-v2";
+const { ACCESS_SECRET, ACCESS_TOKEN, APP_KEY, APP_SECRET } = process.env; // here to demo env variables
 
 const app = express();
 
@@ -39,10 +41,26 @@ const genMask = {
 const otherSideAddress = "0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258";
 const osAddress = "0xf715beb51ec8f63317d66f491e37e7bb048fcc2d";
 
+const client = new TwitterApi({
+  appKey: ACCESS_SECRET!,
+  appSecret: ACCESS_TOKEN!,
+  accessToken: APP_KEY,
+  accessSecret: APP_SECRET,
+});
+
 async function davaQuery() {
+  client.v1
+    .tweet("This tweet was written by a bot")
+    .then((val) => {
+      console.log(val);
+      console.log("success");
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+
   const instance = dava;
   const contract = new Contract(instance.address, instance.abi, maticProvider);
-  // const osContract = new Contract(instance.address, instance.abi, provider);
 
   const transferFilter = {
     address: instance.address,
@@ -53,7 +71,7 @@ async function davaQuery() {
     ],
   };
   // @ts-ignore
-  const logs = await contract.queryFilter(transferFilter, 0x1a1cdde);
+  const logs = await contract.queryFilter(transferFilter, 0x1a1cdde, 0x1aaf9e4);
   maticProvider.on(transferFilter, async (event) => {
     console.log(event);
   });
