@@ -1,6 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
 import { BigNumber, Contract, ethers, utils } from "ethers";
-import { createAlchemyWeb3 } from "@alch/alchemy-web3";
 import davaAbi from "./utils/davaAbi.json";
 import osAbi from "./utils/osAbi.json";
 import genMaskAbi from "./utils/genMaskAbi.json";
@@ -40,6 +39,10 @@ const genMask = {
 
 const otherSideAddress = "0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258";
 const osAddress = "0xf715beb51ec8f63317d66f491e37e7bb048fcc2d";
+console.log("ACCESS_SECRET: ", ACCESS_SECRET);
+console.log("ACCESS_TOKEN: ", ACCESS_TOKEN);
+console.log("APP_KEY: ", APP_KEY);
+console.log("APP_SECRET: ", APP_SECRET);
 
 const client = new TwitterApi({
   appKey: ACCESS_SECRET!,
