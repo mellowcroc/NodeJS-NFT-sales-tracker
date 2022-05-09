@@ -92,6 +92,7 @@ function othersideListen() {
     topics: [transferHash],
   };
   ethProvider.on(filter, async (event) => {
+    console.log(event);
     const tokenId = BigNumber.from(event.topics[3]).toNumber();
     const tx = await ethProvider.getTransaction(event.transactionHash);
     if (tx.to?.toLowerCase() === "0x7f268357a8c2552623316e2562d90e642bb538e5") {
