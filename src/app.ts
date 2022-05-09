@@ -48,7 +48,7 @@ async function davaListen() {
     topics: [transferHash],
   };
   maticProvider.on(transferFilter, async (event) => {
-    console.log(event);
+    // console.log(event);
     const tokenId = BigNumber.from(event.topics[3]).toNumber();
     const tx = await maticProvider.getTransaction(event.transactionHash);
     console.log("tx: ", tx);
@@ -92,9 +92,10 @@ function othersideListen() {
     topics: [transferHash],
   };
   ethProvider.on(filter, async (event) => {
-    console.log(event);
+    // console.log(event);
     const tokenId = BigNumber.from(event.topics[3]).toNumber();
     const tx = await ethProvider.getTransaction(event.transactionHash);
+    console.log("tx: ", tx);
     if (tx.to?.toLowerCase() === "0x7f268357a8c2552623316e2562d90e642bb538e5") {
       const decoder = new InputDataDecoder(osAbiEthChain);
       const result = decoder.decodeData(tx.data);
