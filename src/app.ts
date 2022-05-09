@@ -17,6 +17,18 @@ app.get("/callback", (req: Request, res: Response, next: NextFunction) => {
   res.send("callback!");
 });
 
+app.get("/tweet", (req: Request, res: Response, next: NextFunction) => {
+  client.v1
+    .tweet("This tweet was written by a bot")
+    .then((val) => {
+      console.log(val);
+      console.log("success");
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+});
+
 const maticProvider = new ethers.providers.AlchemyProvider(
   "matic",
   "WOoOVulx3jcn_plLu_rMKYXbBGX-BRvG"
@@ -45,10 +57,10 @@ console.log("APP_KEY: ", APP_KEY);
 console.log("APP_SECRET: ", APP_SECRET);
 
 const client = new TwitterApi({
-  appKey: ACCESS_SECRET!,
-  appSecret: ACCESS_TOKEN!,
-  accessToken: APP_KEY,
-  accessSecret: APP_SECRET,
+  appKey: APP_KEY!,
+  appSecret: APP_SECRET!,
+  accessToken: ACCESS_TOKEN,
+  accessSecret: ACCESS_SECRET,
 });
 
 async function davaQuery() {
