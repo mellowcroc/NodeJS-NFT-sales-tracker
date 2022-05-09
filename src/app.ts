@@ -1,34 +1,14 @@
 import express, { Request, Response, NextFunction } from "express";
 import { BigNumber, Contract, ethers, utils } from "ethers";
-import davaAbi from "./utils/davaAbi.json";
-import osAbi from "./utils/osAbi.json";
-import genMaskAbi from "./utils/genMaskAbi.json";
+import "dotenv/config";
+import osAbiMaticChain from "./utils/osAbiMaticChain.json";
+import osAbiEthChain from "./utils/osAbiEthChain.json";
+import erc20Abi from "./utils/erc20Abi.json";
 import InputDataDecoder from "ethereum-input-data-decoder";
 import TwitterApi from "twitter-api-v2";
-const { ACCESS_SECRET, ACCESS_TOKEN, APP_KEY, APP_SECRET } = process.env; // here to demo env variables
+import { formatEther, formatUnits, parseEther } from "ethers/lib/utils";
 
 const app = express();
-
-app.get("/welcome", (req: Request, res: Response, next: NextFunction) => {
-  res.send("welcome!");
-});
-
-app.get("/callback", (req: Request, res: Response, next: NextFunction) => {
-  res.send("callback!");
-});
-
-app.get("/tweet", (req: Request, res: Response, next: NextFunction) => {
-  client.v1
-    .tweet("This tweet was written by a bot")
-    .then((val) => {
-      console.log(val);
-      console.log("success");
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-  res.send("tweet!");
-});
 
 const maticProvider = new ethers.providers.AlchemyProvider(
   "matic",
@@ -38,35 +18,21 @@ const ethProvider = new ethers.providers.AlchemyProvider(
   "homestead",
   "WOoOVulx3jcn_plLu_rMKYXbBGX-BRvG"
 );
-
 const transferHash = utils.id("Transfer(address,address,uint256)");
-const dava = {
-  abi: davaAbi,
-  address: "0xf81cb9bfea10d94801f3e445d3d818e72e8d1da4",
-};
-
-const genMask = {
-  abi: genMaskAbi,
-  address: "0xfD257dDf743DA7395470Df9a0517a2DFbf66D156",
-};
-
+const davaAddress = "0xf81cb9bfea10d94801f3e445d3d818e72e8d1da4";
 const otherSideAddress = "0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258";
-const osAddress = "0xf715beb51ec8f63317d66f491e37e7bb048fcc2d";
-console.log("ACCESS_SECRET: ", ACCESS_SECRET);
-console.log("ACCESS_TOKEN: ", ACCESS_TOKEN);
-console.log("APP_KEY: ", APP_KEY);
-console.log("APP_SECRET: ", APP_SECRET);
+const osAddressMaticChain = "0xf715beb51ec8f63317d66f491e37e7bb048fcc2d";
 
 const client = new TwitterApi({
-  appKey: APP_KEY!,
-  appSecret: APP_SECRET!,
-  accessToken: ACCESS_TOKEN,
-  accessSecret: ACCESS_SECRET,
+  appKey: process.env.APP_KEY!,
+  appSecret: process.env.APP_SECRET!,
+  accessToken: process.env.ACCESS_TOKEN,
+  accessSecret: process.env.ACCESS_SECRET,
 });
 
-async function davaQuery() {
+function tweet(message: string) {
   client.v1
-    .tweet("This tweet was written by a bot")
+    .tweet(message)
     .then((val) => {
       console.log(val);
       console.log("success");
@@ -74,60 +40,50 @@ async function davaQuery() {
     .catch((err) => {
       console.log(err);
     });
+}
 
-  const instance = dava;
-  const contract = new Contract(instance.address, instance.abi, maticProvider);
-
+async function davaListen() {
   const transferFilter = {
-    address: instance.address,
-    topics: [
-      transferHash,
-      // null,
-      // "0x00000000000000000000000096f68c60443093371dc57cafbeb721b4f32bb19c",
-    ],
+    address: davaAddress,
+    topics: [transferHash],
   };
-  // @ts-ignore
-  const logs = await contract.queryFilter(transferFilter, 0x1a1cdde, 0x1aaf9e4);
   maticProvider.on(transferFilter, async (event) => {
     console.log(event);
-  });
-  const tx = await maticProvider.getTransaction(
-    logs[logs.length - 1].transactionHash
-  );
-  console.log("tx: ", tx);
-  const dataWithoutFunctionSignature =
-    "0x" + tx.data.substring(10, tx.data.length);
+    const tokenId = BigNumber.from(event.topics[3]).toNumber();
+    const tx = await maticProvider.getTransaction(event.transactionHash);
+    console.log("tx: ", tx);
+    if (tx.to && tx.to.toLowerCase() === osAddressMaticChain) {
+      const decoder = new InputDataDecoder(osAbiMaticChain);
+      const result = decoder.decodeData(tx.data);
+      console.log(result);
+      if (result.method === "matchOrders") {
+        console.log(result.method);
+        const from = result.inputs[0][0];
+        const to = result.inputs[1][0];
+        const bidAmount = result.inputs[0][4];
+        const bidTokenAddress = result.inputs[3];
+        const bidTokenContract = new ethers.Contract(
+          bidTokenAddress,
+          JSON.stringify(erc20Abi),
+          ethProvider
+        );
+        const symbol = await bidTokenContract.symbol();
+        const decimals = await bidTokenContract.decimals();
 
-  if (tx.to && tx.to.toLowerCase() === osAddress) {
-    const decoder = new InputDataDecoder(osAbi);
-    const result = decoder.decodeData(tx.data);
-    console.log(result);
-    if (result.method === "matchOrders") {
-      console.log(result.method);
-      const from = result.inputs[0][0];
-      const amount = result.inputs[0][4];
-      const to = result.inputs[1][0];
-      console.log("from: ", from);
-      console.log("amount: ", utils.formatUnits(amount));
-      console.log("to: ", to);
+        console.log("from: ", from);
+        console.log("to: ", to);
+        tweet(
+          "Dava #" +
+          tokenId +
+          " bought for " +
+          formatUnits(bidAmount, decimals) +
+          " " +
+          symbol +
+          "!"
+        );
+      }
     }
-  }
-  // console.log("JSON.stringify(abi): ", JSON.stringify(abi));
-
-  // const logsFromOS = [];
-  // for (let i = 0; i < logs.length / 10; i++) {
-  //   const tx = await provider.getTransaction(logs[i].transactionHash);
-  //   console.log("tx.to: ", tx.to);
-  //   if (tx.to === osAddress) {
-  //     logsFromOS.push(logs[i]);
-  //   }
-  // }
-
-  // console.log("LENGTH: ", logsFromOS.length);
-  // console.log("LENGTH: ", logsFromOS[logsFromOS.length - 1]);
-
-  // const block = await provider.getBlock(100005);
-  // console.log(block);
+  });
 }
 
 function othersideListen() {
@@ -135,18 +91,46 @@ function othersideListen() {
     address: otherSideAddress,
     topics: [transferHash],
   };
-  ethProvider.on(filter, (event) => {
-    console.log("event: ", event);
+  ethProvider.on(filter, async (event) => {
+    const tokenId = BigNumber.from(event.topics[3]).toNumber();
+    const tx = await ethProvider.getTransaction(event.transactionHash);
+    if (tx.to?.toLowerCase() === "0x7f268357a8c2552623316e2562d90e642bb538e5") {
+      const decoder = new InputDataDecoder(osAbiEthChain);
+      const result = decoder.decodeData(tx.data);
+      if (result.method === "atomicMatch_") {
+        const bidTokenAddress = result.inputs[0][6];
+        const bidAmount = result.inputs[1][4];
+
+        if (bidTokenAddress !== "0x0000000000000000000000000000000000000000") {
+          const bidTokenContract = new ethers.Contract(
+            bidTokenAddress,
+            JSON.stringify(erc20Abi),
+            ethProvider
+          );
+          const symbol = await bidTokenContract.symbol();
+          const decimals = await bidTokenContract.decimals();
+          tweet(
+            "Otherside #" +
+            tokenId +
+            " bought for " +
+            formatUnits(bidAmount, decimals) +
+            " " +
+            symbol +
+            "!"
+          );
+        } else {
+          tweet(
+            "Otherside #" +
+            tokenId +
+            " bought for " +
+            formatEther(tx.value) +
+            " ETH!"
+          );
+        }
+      }
+    }
   });
 }
 
-app.listen("1234", () => {
-  console.log(`
-  ################################################
-  🛡️  Server listening on port: 1234🛡️
-  ################################################
-`);
-});
-// websocket();
-davaQuery();
-// othersideListen();
+davaListen();
+othersideListen();
