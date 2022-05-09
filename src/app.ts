@@ -27,6 +27,7 @@ app.get("/tweet", (req: Request, res: Response, next: NextFunction) => {
     .catch((err) => {
       console.log(err);
     });
+  res.send("tweet!");
 });
 
 const maticProvider = new ethers.providers.AlchemyProvider(
