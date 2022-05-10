@@ -51,13 +51,14 @@ async function davaListen() {
     // console.log(event);
     const tokenId = BigNumber.from(event.topics[3]).toNumber();
     const tx = await maticProvider.getTransaction(event.transactionHash);
-    console.log("tx: ", tx);
+    console.log("DAVA TX: ", tx.hash);
     if (tx.to && tx.to.toLowerCase() === osAddressMaticChain) {
+      console.log("DAVA 1");
       const decoder = new InputDataDecoder(osAbiMaticChain);
       const result = decoder.decodeData(tx.data);
       console.log(result);
       if (result.method === "matchOrders") {
-        console.log(result.method);
+        console.log("DAVA 2");
         const from = result.inputs[0][0];
         const to = result.inputs[1][0];
         const bidAmount = result.inputs[0][4];
@@ -95,15 +96,18 @@ function othersideListen() {
     // console.log(event);
     const tokenId = BigNumber.from(event.topics[3]).toNumber();
     const tx = await ethProvider.getTransaction(event.transactionHash);
-    console.log("tx: ", tx);
+    console.log("OTHERSIDE TX: ", tx.hash);
     if (tx.to?.toLowerCase() === "0x7f268357a8c2552623316e2562d90e642bb538e5") {
+      console.log("OTHERSIDE 1");
       const decoder = new InputDataDecoder(osAbiEthChain);
       const result = decoder.decodeData(tx.data);
       if (result.method === "atomicMatch_") {
+        console.log("OTHERSIDE 2");
         const bidTokenAddress = result.inputs[0][6];
         const bidAmount = result.inputs[1][4];
 
         if (bidTokenAddress !== "0x0000000000000000000000000000000000000000") {
+          console.log("OTHERSIDE 3");
           const bidTokenContract = new ethers.Contract(
             bidTokenAddress,
             JSON.stringify(erc20Abi),
